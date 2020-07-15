@@ -18,6 +18,7 @@ CLIENT_SECRET=<your spotify client secret>
 ```
 Get the your Spotify's **CLIENT_ID** and **CLIENT SECRET** by registering this app on https://developer.spotify.com/dashboard/
 > Don't forget to set the **Redirect URL** to **_HOST:PORT/auth/callback_**
+
 now, spin up the server. 
 ```bash
 npm run dev
