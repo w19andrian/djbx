@@ -1,8 +1,5 @@
 # DJBX
 
-### Next Feature Need To create
-**BUAT OI NEXT FEATURE YANG PENGEN DIBUAT**
-
 ## QUICK START
 Install node modules
 ```bash
