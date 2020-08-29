@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include ('../components/head') %> 
+  </head>
+<body>
+  <button type="Login" class="btn btn-success" onclick="login()">Login</button>
+  <script>
+    function login() {
+      fetch('/auth/login', {
+        method: 'GET',
+        mode: 'no-cors',
+        redirect: 'follow'
+      })
+
+    }
+  </script>
+</body>
+</html>

@@ -1,5 +1,7 @@
 var createError = require('http-errors');
 var express = require('express');
+// var partials = require('express-partials');
+
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
@@ -7,7 +9,6 @@ var logger = require('morgan');
 const indexRouter = require('./routes/index');
 const authRouter = require('./routes/auth');
 const apiRouter = require('./routes/api')
-const adminRouter = require('./routes/admin')
 
 var app = express();
 // view engine setup
@@ -21,7 +22,6 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-app.use('/admin', adminRouter);
 app.use('/auth', authRouter);
 app.use('/v1', apiRouter);
 
