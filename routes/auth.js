@@ -11,10 +11,11 @@ const AuthConf = require('../config/auth')
 * get it from https://developer.spotify.com
 * Store it in .env file OR export it to environment variable
 */
-const hostname = AppConf.HOST + ':' + AppConf.PORT
-const redirect_uri = hostname + '/auth/callback';
+
 const client_id = AuthConf.CLIENT_ID;
 const client_secret = AuthConf.CLIENT_SECRET;
+const hostname = AppConf.HOST + ':' + AppConf.PORT
+const redirect_uri = hostname + '/auth/callback';
 
 let auth = Router();
 
@@ -91,9 +92,24 @@ auth.get('/callback', function(req, res) {
 
         access_token = body.access_token, expires_in = body.expires_in;
         refresh_token = body.refresh_token ;
-        res.render('callback',{access_token: access_token, refresh_token: refresh_token, expires_in: expires_in})
+
+        var playerOpts = {
+          url: 'https://api.spotify.com/v1/me/player',
+          headers: {
+            'Authorization': 'Bearer ' + access_token
+          },
+          json: true
+        }
+      
+        request.get(playerOpts, function(error,response,body) {
+          if(!error && response.statusCode === 200) {
+            dev_id = body.device.id
+          }
+          return dev_id
+        });
+        res.render('pages/callback',{access_token: access_token, refresh_token: refresh_token, expires_in: expires_in})
       } else {
-        res.render('callback');
+        res.render('pages/callback');
       }
     });
   }
@@ -141,10 +157,6 @@ auth.post('/token', function(req, res) {
         expires_in: ''
       }))
   }
-});
-
-auth.get('/info', function(req, res) {
-  res.render('authInfo',{access_token: access_token, refresh_token: refresh_token});
 });
 
 module.exports = auth;
