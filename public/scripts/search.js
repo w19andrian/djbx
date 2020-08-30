@@ -41,13 +41,6 @@ function getResult(event) {
         d.album.name + '-' + 
         d.album.release_date + '</span></p></option>'
       
-      console.log(JSON.stringify({
-        img_url: img,
-        track: d.track,
-        id: d.id,
-        artist:artist,
-        album: {type: d.album.type, name: d.album.name, release_date: d.album.release_date}
-      }))
       document.getElementById('select-result').innerHTML = append_html_result ; 
     })
     document.getElementById('add-queue').innerHTML = append_html_button ;
@@ -66,7 +59,7 @@ function addQueue(event) {
   })
   .then(response => response.json())
   .then((data) => {
-    console.log('SUCCESS')
+    console.log('TRACK ADDED TO QUEUE')
   })
   .catch(function(data){console.log(data)})
 }
