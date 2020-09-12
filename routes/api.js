@@ -34,10 +34,10 @@ function refreshToken(refresh_token) {
 }
 
 /* GET search by given input. */
-api.post('/search', async function(req, res) {
+api.get('/search', async function(req, res) {
 
-  var q = req.body ? req.body.q : null ;
-  var limit = (req.body && req.body.limit) ? req.body.limit : 10 ;
+  var q = req.query ? req.query.q : null ;
+  var limit = (req.query && req.query.limit) ? req.query.limit : 10 ;
 
   await refreshToken(refresh_token);
 
