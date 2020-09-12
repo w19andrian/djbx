@@ -1,10 +1,14 @@
 const express = require('express');
 const querystring = require('querystring');
 const request = require('request');
+const axios = require('axios').default ;
 
 const Router = express.Router;
-const AppConf = require('../config/app')
-const AuthConf = require('../config/auth')
+const AppConf = require('../config/app');
+const AuthConf = require('../config/auth');
+const { resolve } = require('path');
+const { get } = require('request');
+const { access } = require('fs');
 
 /**
 * Spotify auth informations
@@ -16,8 +20,44 @@ const client_id = AuthConf.CLIENT_ID;
 const client_secret = AuthConf.CLIENT_SECRET;
 const hostname = AppConf.HOST + ':' + AppConf.PORT
 const redirect_uri = hostname + '/auth/callback';
+const dev_name = AppConf.DEVICE_NAME ;
 
 let auth = Router();
+
+const instance = axios.create({
+  baseURL: 'https://api.spotify.com/v1'
+})
+
+const setToken = accessToken => {
+  if (accessToken) {
+    instance.defaults.headers.common['Authorization'] = 'Bearer ' + accessToken ;
+  } else {
+    delete instance.defaults.headers.common['Authorization'] ;
+  }
+}
+
+var getDeviceId = async function(deviceName, accessToken) {
+  try {
+    await setToken(accessToken);
+
+    let getDevices = await instance.get('/me/player/devices');
+    let results = getDevices.data.devices;
+
+    for (var i = 0 ; i < results.length ; i++) {
+      if (results[i].name == deviceName) {
+        var deviceId = results[i].id ;
+
+        return deviceId ;
+
+      } else {
+        console.log('Device name not found')
+      }
+    }
+  }
+  catch (error) {
+    console.error(error);
+  }
+}
 
 var generateRandomString = function(length) {
   var text = '';
@@ -68,9 +108,9 @@ auth.get('/callback', function(req, res) {
   var state = req.query.state || null;
   var storedState = req.cookies ? req.cookies[stateKey] : null;
 
-    if (state === null || state !== storedState) {
-    console.log('state mismatch', 'state: ' + state, 'storedState: ' + storedState, 'cookies: ' + req.cookies);
-    res.send('state mismatch, please try again');
+  if (state === null || state !== storedState) {
+  console.log('state mismatch', 'state: ' + state, 'storedState: ' + storedState, 'cookies: ' + req.cookies);
+  res.send('state mismatch, please try again');
   } else {
     res.clearCookie(stateKey);
     var authOpts = {
@@ -81,32 +121,20 @@ auth.get('/callback', function(req, res) {
         redirect_uri: redirect_uri
       },
       headers: {
-        Authorization: 'Basic ' + new Buffer(client_id + ':' + client_secret).toString('base64')
+        Authorization: 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64'))
       },
       json: true
     };
-    
-    request.post(authOpts, function(error, response, body) {
+
+    request.post(authOpts, async function(error, response, body) {
       if (!error && response.statusCode === 200) {
         // store tokens globally...for now
 
         access_token = body.access_token, expires_in = body.expires_in;
         refresh_token = body.refresh_token ;
-
-        var playerOpts = {
-          url: 'https://api.spotify.com/v1/me/player',
-          headers: {
-            'Authorization': 'Bearer ' + access_token
-          },
-          json: true
-        }
-      
-        request.get(playerOpts, function(error,response,body) {
-          if(!error && response.statusCode === 200) {
-            dev_id = body.device.id
-          }
-          return dev_id
-        });
+        
+        dev_id = await getDeviceId(dev_name, access_token);
+        
         res.render('pages/callback',{access_token: access_token, refresh_token: refresh_token, expires_in: expires_in})
       } else {
         res.render('pages/callback');
@@ -129,7 +157,7 @@ auth.post('/token', function(req, res) {
         refresh_token: refreshToken
       },
       headers: {
-        Authorization: 'Basic '+ new Buffer(client_id + ':' + client_secret).toString('base64')
+        Authorization: 'Basic '+ (Buffer.from(client_id + ':' + client_secret).toString('base64'))
       },
       json: true
     };

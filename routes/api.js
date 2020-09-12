@@ -9,7 +9,9 @@ const { response } = require('express');
 let api = Router();
 
 const hostname = appConfig.HOST + ':' + appConfig.PORT ;
+
 const spotify_prefix = 'https://api.spotify.com/v1' ;
+
 
 function refreshToken(refresh_token) {
   var refresh_token = refresh_token || null;
@@ -110,9 +112,11 @@ api.post('/search', async function(req, res) {
 
 api.get('/queue', async function(req, res) {
   var id = req.query ? req.query.id : null ;
+
   await refreshToken(refresh_token);
 
   if(id) {
+
     var addQueue = {
       url: spotify_prefix + '/me/player/queue?'+ 
       querystring.stringify({

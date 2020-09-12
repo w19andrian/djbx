@@ -4,16 +4,11 @@
     <%- include ('../components/head') %> 
   </head>
 <body>
-  <button type="Login" class="btn btn-success" onclick="login()">Login</button>
+  <button type="Login" class="btn btn-success" onclick="openWin()">Login</button>
   <script>
-    function login() {
-      fetch('/auth/login', {
-        method: 'GET',
-        mode: 'no-cors',
-        redirect: 'follow'
-      })
-
+    function openWin() {
+      window.open("/auth/login");
     }
-  </script>
+    </script>
 </body>
 </html>
