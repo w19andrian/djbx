@@ -28,6 +28,8 @@ const instance = axios.create({
   baseURL: 'https://api.spotify.com/v1'
 })
 
+/* Add access token to axios instance */
+
 const setToken = accessToken => {
   if (accessToken) {
     instance.defaults.headers.common['Authorization'] = 'Bearer ' + accessToken ;
@@ -36,21 +38,19 @@ const setToken = accessToken => {
   }
 }
 
-var getDeviceId = async function(deviceName, accessToken) {
+/* Get device's id of given device's name in config file */
+
+let getDeviceId = async (deviceName, accessToken) => {
   try {
     await setToken(accessToken);
 
     let getDevices = await instance.get('/me/player/devices');
-    let results = getDevices.data.devices;
 
-    for (var i = 0 ; i < results.length ; i++) {
-      if (results[i].name == deviceName) {
-        var deviceId = results[i].id ;
-
-        return deviceId ;
-
+    for (var i = 0 ; i < getDevices.data.devices.length ; i++) {
+      if (getDevices.data.devices[i].name == deviceName) {
+        return getDevices.data.devices[i].id ;
       } else {
-        console.log('Device name not found')
+        console.log('Device not found')
       }
     }
   }
@@ -133,6 +133,8 @@ auth.get('/callback', function(req, res) {
         access_token = body.access_token, expires_in = body.expires_in;
         refresh_token = body.refresh_token ;
         
+        /* Get device ID and store it globally...for now */
+       
         dev_id = await getDeviceId(dev_name, access_token);
         
         res.render('pages/callback',{access_token: access_token, refresh_token: refresh_token, expires_in: expires_in})

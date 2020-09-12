@@ -110,6 +110,8 @@ api.post('/search', async function(req, res) {
 
 });
 
+/* Add queue based on selected search result */
+
 api.get('/queue', async function(req, res) {
   var id = req.query ? req.query.id : null ;
 
@@ -144,6 +146,8 @@ api.get('/queue', async function(req, res) {
   }
 })
 
+/* Play user's current playback on the device specified in the config file */
+
 api.put('/player/play', async function(req, res) {
   await refreshToken(refresh_token);
 
@@ -169,6 +173,8 @@ api.put('/player/play', async function(req, res) {
   })
 })
 
+/* Pause user's current playback on the device specified in the config file */
+
 api.put('/player/pause', async function(req, res) {
   await refreshToken(refresh_token);
 
@@ -193,6 +199,9 @@ api.put('/player/pause', async function(req, res) {
     }
   })
 })
+
+/* Play user's next queue
+on the device specified in the config file */
 
 api.post('/player/next', async function(req, res) {
   await refreshToken(refresh_token);
