@@ -130,14 +130,14 @@ auth.get('/callback', function(req, res) {
       if (!error && response.statusCode === 200) {
         // store tokens globally...for now
 
-        accessToken = body.access_token, expires_in = body.expires_in;
+        accessToken = body.access_token, expiresIn = body.expires_in;
         refreshToken = body.refresh_token ;
         
         /* Get device ID and store it globally...for now */
        
-        dev_id = await getDeviceId(deviceName, accessToken);
+        deviceId = await getDeviceId(deviceName, accessToken);
         
-        res.render('pages/callback',{accessToken: accessToken, refresh_token: refreshToken, expires_in: expiresIn})
+        res.render('pages/callback',{access_token: accessToken, refresh_token: refreshToken, expires_in: expiresIn})
       } else {
         res.render('pages/callback');
       }
@@ -165,7 +165,7 @@ auth.post('/token', function(req, res) {
     };
     request.post(authOpts, function(error, response, body){
       if (!error && response.statusCode == 200) {
-        var accessToken = body.accessToken, expiresIn = body.expiresIn;
+        var accessToken = body.access_token, expiresIn = body.expires_in;
 
         res.header('Content-Type', 'application/json');
         res.send(JSON.stringify({

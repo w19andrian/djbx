@@ -23,7 +23,7 @@ function getNewToken(refreshToken) {
     json: true
     }
 
-  request.post(TokenOpts, function(error,response,body) {
+  request.post(tokenOpts, function(error,response,body) {
     if(!error && response.statusCode == 200 ){
     var accessToken = body.accessToken;
     } else {
@@ -123,7 +123,7 @@ api.get('/queue', async function(req, res) {
       url: spotifyPrefix + '/me/player/queue?'+ 
       querystring.stringify({
         uri: 'spotify:track:' + id,
-        device_id: dev_id
+        device_id: deviceId
       }),
       headers:{
         'Authorization': 'Bearer ' + accessToken
@@ -154,7 +154,7 @@ api.put('/player/play', async function(req, res) {
   var playQueue = {
     url: spotifyPrefix + '/me/player/play?' +
       querystring.stringify({
-        device_id: dev_id
+        device_id: deviceId
       }),
     headers: {
       'Authorization': 'Bearer ' + accessToken
@@ -181,7 +181,7 @@ api.put('/player/pause', async function(req, res) {
   var pauseQueue = {
     url: spotifyPrefix + '/me/player/pause?' +
       querystring.stringify({
-        device_id: dev_id
+        device_id: deviceId
       }),
     headers: {
       'Authorization': 'Bearer ' + accessToken
@@ -209,7 +209,7 @@ api.post('/player/next', async function(req, res) {
   var nextQueue = {
     url: spotifyPrefix + '/me/player/next?' +
       querystring.stringify({
-        device_id: dev_id
+        device_id: deviceId
       }),
     headers: {
       'Authorization': 'Bearer ' + accessToken
