@@ -1,6 +1,5 @@
 var createError = require('http-errors');
 var express = require('express');
-// var partials = require('express-partials');
 
 var path = require('path');
 var cookieParser = require('cookie-parser');

@@ -4,8 +4,8 @@ const request = require('request');
 const axios = require('axios').default ;
 
 const Router = express.Router;
-const AppConf = require('../config/app');
-const AuthConf = require('../config/auth');
+const appConf = require('../config/app');
+const authConf = require('../config/auth');
 const { resolve } = require('path');
 const { get } = require('request');
 const { access } = require('fs');
@@ -16,11 +16,11 @@ const { access } = require('fs');
 * Store it in .env file OR export it to environment variable
 */
 
-const client_id = AuthConf.CLIENT_ID;
-const client_secret = AuthConf.CLIENT_SECRET;
-const hostname = AppConf.HOST + ':' + AppConf.PORT
-const redirect_uri = hostname + '/auth/callback';
-const dev_name = AppConf.DEVICE_NAME ;
+const clientId = authConf.CLIENT_ID;
+const clientSecret = authConf.CLIENT_SECRET;
+const hostName = appConf.HOST + ':' + appConf.PORT
+const redirectUri = hostName + '/auth/callback';
+const deviceName = appConf.DEVICE_NAME ;
 
 let auth = Router();
 
@@ -78,10 +78,10 @@ auth.get('/login', function(req, res) {
   res.cookie(stateKey, state)
   
   // compile scopes
-  var scopeLength = Object.keys(AuthConf.SCOPE).length;
+  var scopeLength = Object.keys(authConf.SCOPE).length;
   var scope = '';
   for(var i = 0; i < scopeLength; i++) {
-    scope += AuthConf.SCOPE[i];
+    scope += authConf.SCOPE[i];
     if (i != scopeLength - 1) {
       scope += ' ';
     };
@@ -92,10 +92,10 @@ auth.get('/login', function(req, res) {
     'https://accounts.spotify.com/authorize?' +
       querystring.stringify({
         response_type: 'code',
-        redirect_uri: redirect_uri,
+        redirect_uri: redirectUri,
         state: state,
         scope: scope,
-        client_id: client_id
+        client_id: clientId
       })
   );
 });
@@ -118,10 +118,10 @@ auth.get('/callback', function(req, res) {
       form: {
         code: code,
         grant_type: 'authorization_code',
-        redirect_uri: redirect_uri
+        redirect_uri: redirectUri
       },
       headers: {
-        Authorization: 'Basic ' + (Buffer.from(client_id + ':' + client_secret).toString('base64'))
+        Authorization: 'Basic ' + (Buffer.from(clientId + ':' + clientSecret).toString('base64'))
       },
       json: true
     };
@@ -130,14 +130,14 @@ auth.get('/callback', function(req, res) {
       if (!error && response.statusCode === 200) {
         // store tokens globally...for now
 
-        access_token = body.access_token, expires_in = body.expires_in;
-        refresh_token = body.refresh_token ;
+        accessToken = body.access_token, expires_in = body.expires_in;
+        refreshToken = body.refresh_token ;
         
         /* Get device ID and store it globally...for now */
        
-        dev_id = await getDeviceId(dev_name, access_token);
+        dev_id = await getDeviceId(deviceName, accessToken);
         
-        res.render('pages/callback',{access_token: access_token, refresh_token: refresh_token, expires_in: expires_in})
+        res.render('pages/callback',{accessToken: accessToken, refresh_token: refreshToken, expires_in: expiresIn})
       } else {
         res.render('pages/callback');
       }
@@ -159,18 +159,18 @@ auth.post('/token', function(req, res) {
         refresh_token: refreshToken
       },
       headers: {
-        Authorization: 'Basic '+ (Buffer.from(client_id + ':' + client_secret).toString('base64'))
+        Authorization: 'Basic '+ (Buffer.from(clientId + ':' + clientSecret).toString('base64'))
       },
       json: true
     };
     request.post(authOpts, function(error, response, body){
       if (!error && response.statusCode == 200) {
-        var access_token = body.access_token, expires_in = body.expires_in;
+        var accessToken = body.accessToken, expiresIn = body.expiresIn;
 
         res.header('Content-Type', 'application/json');
         res.send(JSON.stringify({
-          access_token: access_token,
-          expires_in: expires_in
+          access_token: accessToken,
+          expires_in: expiresIn
         }))
       } else {
           res.header('Content-Type', 'application/json');

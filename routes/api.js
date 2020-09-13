@@ -3,33 +3,33 @@ const Router = express.Router;
 const querystring = require('querystring');
 const request = require('request');
 
-const appConfig = require('../config/app');
+const appConf = require('../config/app');
 const { response } = require('express');
 
 let api = Router();
 
-const hostname = appConfig.HOST + ':' + appConfig.PORT ;
+const hostName = appConf.HOST + ':' + appConf.PORT ;
 
-const spotify_prefix = 'https://api.spotify.com/v1' ;
+const spotifyPrefix = 'https://api.spotify.com/v1' ;
 
 
-function refreshToken(refresh_token) {
-  var refresh_token = refresh_token || null;
+function getNewToken(refreshToken) {
+  var refreshToken = refreshToken || null;
 
   var tokenOpts = {
-    url: hostname + '/auth/token?' +
+    url: hostName + '/auth/token?' +
     querystring.stringify({
-        refresh_token: refresh_token }),
+        refresh_token: refreshToken }),
     json: true
     }
 
-  request.post(tokenOpts, function(error,response,body) {
+  request.post(TokenOpts, function(error,response,body) {
     if(!error && response.statusCode == 200 ){
-    var access_token = body.access_token;
+    var accessToken = body.accessToken;
     } else {
       res.send('Error POST to /auth/token')
     }    
-    return access_token
+    return accessToken
   })
 }
 
@@ -39,7 +39,7 @@ api.post('/search', async function(req, res) {
   var q = req.body ? req.body.q : null ;
   var limit = (req.body && req.body.limit) ? req.body.limit : 10 ;
 
-  await refreshToken(refresh_token);
+  await getNewToken(refreshToken);
 
   if(q) {
     var trackSearch = {
@@ -51,7 +51,7 @@ api.post('/search', async function(req, res) {
         limit: limit
       }),
       headers: {
-        'Authorization': 'Bearer ' + access_token
+        'Authorization': 'Bearer ' + accessToken
       },
       json: true
     }
@@ -115,18 +115,18 @@ api.post('/search', async function(req, res) {
 api.get('/queue', async function(req, res) {
   var id = req.query ? req.query.id : null ;
 
-  await refreshToken(refresh_token);
+  await getNewToken(refreshToken);
 
   if(id) {
 
     var addQueue = {
-      url: spotify_prefix + '/me/player/queue?'+ 
+      url: spotifyPrefix + '/me/player/queue?'+ 
       querystring.stringify({
         uri: 'spotify:track:' + id,
         device_id: dev_id
       }),
       headers:{
-        'Authorization': 'Bearer ' + access_token
+        'Authorization': 'Bearer ' + accessToken
       },
       json: true
     }
@@ -149,15 +149,15 @@ api.get('/queue', async function(req, res) {
 /* Play user's current playback on the device specified in the config file */
 
 api.put('/player/play', async function(req, res) {
-  await refreshToken(refresh_token);
+  await getNewToken(refreshToken);
 
   var playQueue = {
-    url: spotify_prefix + '/me/player/play?' +
+    url: spotifyPrefix + '/me/player/play?' +
       querystring.stringify({
         device_id: dev_id
       }),
     headers: {
-      'Authorization': 'Bearer ' + access_token
+      'Authorization': 'Bearer ' + accessToken
     },
     json: true
   }
@@ -176,15 +176,15 @@ api.put('/player/play', async function(req, res) {
 /* Pause user's current playback on the device specified in the config file */
 
 api.put('/player/pause', async function(req, res) {
-  await refreshToken(refresh_token);
+  await getNewToken(refreshToken);
 
   var pauseQueue = {
-    url: spotify_prefix + '/me/player/pause?' +
+    url: spotifyPrefix + '/me/player/pause?' +
       querystring.stringify({
         device_id: dev_id
       }),
     headers: {
-      'Authorization': 'Bearer ' + access_token
+      'Authorization': 'Bearer ' + accessToken
     },
     json: true
   }
@@ -204,15 +204,15 @@ api.put('/player/pause', async function(req, res) {
 on the device specified in the config file */
 
 api.post('/player/next', async function(req, res) {
-  await refreshToken(refresh_token);
+  await getNewToken(refreshToken);
 
   var nextQueue = {
-    url: spotify_prefix + '/me/player/next?' +
+    url: spotifyPrefix + '/me/player/next?' +
       querystring.stringify({
         device_id: dev_id
       }),
     headers: {
-      'Authorization': 'Bearer ' + access_token
+      'Authorization': 'Bearer ' + accessToken
     },
     json: true
   }
