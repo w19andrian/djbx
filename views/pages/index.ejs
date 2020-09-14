@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include ("../components/head") %> 
+</head>
+<body>
+  <header>
+    <div class="btn btn-play">
+      <button type="Play" class="btn btn-play-success" onclick="play()">Play</button>
+      <script>
+        function play() {
+          fetch('/v1/player/play', {
+            method: 'PUT'
+      })
+    }
+      </script>
+    </div>
+    <div class="btn btn-pause">
+      <button type="pause" class="btn btn-pause-success" onclick="pause()">pause</button>
+      <script>
+        function pause() {
+          fetch('/v1/player/pause', {
+          method: 'PUT'
+      })
+    }
+      </script>
+    </div>
+    <div class="btn btn-next">
+      <button type="next" class="btn btn-next-success" onclick="next()">next</button>
+      <script>
+        function next() {
+          fetch('/v1/player/next', {
+          method: 'POST'
+      })
+    }
+      </script>
+    </div>
+  </header>
+  <div class="container">
+    <form id='searchForm' onsubmit="getResult(event)">
+      <input id='searchInp' type="text" class="ghost input"
+      placeholder="Search track">
+    </form>
+    <div class="container container-results" id="search-results">
+      <form id="form-results">
+        <select name="select-result" id="select-result" multiple></select><br>
+        <div class="btn btn-queue" id="add-queue"></div>
+      </form>  
+    </div>
+  </div>
+</body>
+</html>
