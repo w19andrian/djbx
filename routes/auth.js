@@ -2,6 +2,7 @@ const express = require('express');
 const querystring = require('querystring');
 const request = require('request');
 const axios = require('axios').default ;
+const qs = require('qs');
 
 const Router = express.Router;
 const appConf = require('../config/app');
@@ -26,11 +27,26 @@ let auth = Router();
 
 const instance = axios.create({
   baseURL: 'https://api.spotify.com/v1'
-})
+});
+
+const tokenInstance = axios.create({
+  baseURL: 'https://accounts.spotify.com'
+});
 
 /* Add access token to axios instance */
 
-const setToken = accessToken => {
+let setAuth = (clientId, clientSecret) => {
+  if(clientId && clientSecret) {
+    tokenInstance.defaults.headers.common['Authorization'] = 'Basic ' + (Buffer.from(clientId + ':' + clientSecret).toString('base64'));
+    tokenInstance.defaults.headers.common['Content-Type'] = 'application/x-www-form-urlencoded';
+
+  } else {
+    delete tokenInstance.defaults.headers.common['Authorization'] ;
+    delete tokenInstance.defaults.headers.post['Content-Type'];
+  }
+}
+
+let setToken = accessToken => {
   if (accessToken) {
     instance.defaults.headers.common['Authorization'] = 'Bearer ' + accessToken ;
   } else {
@@ -100,7 +116,7 @@ auth.get('/login', function(req, res) {
   );
 });
 
-auth.get('/callback', function(req, res) {
+auth.get('/callback', async function(req, res) {
   // request access and refresh token
   // after checking the auth status
 
@@ -113,25 +129,23 @@ auth.get('/callback', function(req, res) {
   res.send('state mismatch, please try again');
   } else {
     res.clearCookie(stateKey);
-    var authOpts = {
-      url: 'https://accounts.spotify.com/api/token',
-      form: {
+
+    await setAuth(clientId, clientSecret);
+
+    try {
+      let data = {
         code: code,
         grant_type: 'authorization_code',
         redirect_uri: redirectUri
-      },
-      headers: {
-        Authorization: 'Basic ' + (Buffer.from(clientId + ':' + clientSecret).toString('base64'))
-      },
-      json: true
-    };
+      }
 
-    request.post(authOpts, async function(error, response, body) {
-      if (!error && response.statusCode === 200) {
-        // store tokens globally...for now
+      let response = await tokenInstance.post('/api/token', qs.stringify(data));
 
-        accessToken = body.access_token, expiresIn = body.expires_in;
-        refreshToken = body.refresh_token ;
+      if (response.status === 200) {
+      /* store tokens globally...for now */
+        
+        accessToken = response.data.access_token, expiresIn = response.data.expires_in;
+        refreshToken = response.data.refresh_token ;
         
         /* Get device ID and store it globally...for now */
        
@@ -141,45 +155,49 @@ auth.get('/callback', function(req, res) {
       } else {
         res.render('pages/callback');
       }
-    });
+    }
+    catch (error) {
+      console.log(error);
+    }
   }
 });
 
-auth.post('/token', function(req, res) {
+auth.post('/token', async function(req, res) {
   // request access token using provided refresh token
 
   res.setHeader('Access-Control-Allow-origin', '*');
   var refreshToken = req.body ? req.body.refresh_token : null;
 
   if (refreshToken) {
-    var authOpts = {
-      url: 'https://accounts.spotify.com/api/token',
-      form: {
+    try {
+      await setAuth(clientId, clientSecret);
+
+      let data = {
         grant_type: 'refresh_token',
         refresh_token: refreshToken
-      },
-      headers: {
-        Authorization: 'Basic '+ (Buffer.from(clientId + ':' + clientSecret).toString('base64'))
-      },
-      json: true
-    };
-    request.post(authOpts, function(error, response, body){
-      if (!error && response.statusCode == 200) {
-        var accessToken = body.access_token, expiresIn = body.expires_in;
+      };
+
+      let response = await tokenInstance.post('/api/token', qs.stringify(data));
+
+      if (response.status === 200) {
+        var accessToken = response.data.access_token, expiresIn = response.data.expires_in;
 
         res.header('Content-Type', 'application/json');
         res.send(JSON.stringify({
           access_token: accessToken,
           expires_in: expiresIn
-        }))
+        }));
       } else {
-          res.header('Content-Type', 'application/json');
-          res.send(JSON.stringify({
-            access_token: '',
-            expires_in: ''
-          }))
-      }
-    });
+        res.header('Content-Type', 'application/json');
+        res.send(JSON.stringify({
+          access_token: '',
+          expires_in: ''
+        }));
+      }   
+    }
+    catch (error) {
+      console.log(error);
+    }
   } else {
       res.header('Content-Type', 'application/json')
       res.send(JSON.stringify({
