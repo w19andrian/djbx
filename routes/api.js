@@ -109,7 +109,7 @@ api.get('/search', async function(req, res) {
 
 /* Add queue based on selected search result */
 
-api.get('/queue', async function(req, res) {
+api.post('/queue', async function(req, res) {
   let id = req.query ? req.query.id : null ;
 
   await getNewToken(refreshToken);
