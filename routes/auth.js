@@ -1,6 +1,5 @@
 const express = require('express');
 const querystring = require('querystring');
-const request = require('request');
 const axios = require('axios').default ;
 const qs = require('qs');
 
@@ -16,14 +15,14 @@ const { access } = require('fs');
 * get it from https://developer.spotify.com
 * Store it in .env file OR export it to environment variable
 */
-
 const clientId = authConf.CLIENT_ID;
 const clientSecret = authConf.CLIENT_SECRET;
+
 const hostName = appConf.HOST + ':' + appConf.PORT
 const redirectUri = hostName + '/auth/callback';
 const deviceName = appConf.DEVICE_NAME ;
 
-let auth = Router();
+const auth = Router();
 
 const instance = axios.create({
   baseURL: 'https://api.spotify.com/v1'
@@ -62,7 +61,7 @@ let getDeviceId = async (deviceName, accessToken) => {
 
     let getDevices = await instance.get('/me/player/devices');
 
-    for (var i = 0 ; i < getDevices.data.devices.length ; i++) {
+    for (let i = 0 ; i < getDevices.data.devices.length ; i++) {
       if (getDevices.data.devices[i].name == deviceName) {
         return getDevices.data.devices[i].id ;
       } else {
@@ -75,28 +74,28 @@ let getDeviceId = async (deviceName, accessToken) => {
   }
 }
 
-var generateRandomString = function(length) {
-  var text = '';
-  var collection = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890';
+let generateRandomString = function(length) {
+  let text = '';
+  let collection = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890';
 
-  for (var i = 0; i < length; i++) {
+  for (let i = 0; i < length; i++) {
       text += collection.charAt(Math.floor(Math.random() * collection.length ));
   }
   return text;
 };
 
-var stateKey = 'spotify_auth_state';
+let stateKey = 'spotify_auth_state';
 
 auth.get('/login', function(req, res) {
 
   // generate state to be stored on cookie
-  var state = generateRandomString(16);
+  let state = generateRandomString(16);
   res.cookie(stateKey, state)
   
   // compile scopes
-  var scopeLength = Object.keys(authConf.SCOPE).length;
-  var scope = '';
-  for(var i = 0; i < scopeLength; i++) {
+  let scopeLength = Object.keys(authConf.SCOPE).length;
+  let scope = '';
+  for(let i = 0; i < scopeLength; i++) {
     scope += authConf.SCOPE[i];
     if (i != scopeLength - 1) {
       scope += ' ';
@@ -120,9 +119,9 @@ auth.get('/callback', async function(req, res) {
   // request access and refresh token
   // after checking the auth status
 
-  var code = req.query.code || null;
-  var state = req.query.state || null;
-  var storedState = req.cookies ? req.cookies[stateKey] : null;
+  let code = req.query.code || null;
+  let state = req.query.state || null;
+  let storedState = req.cookies ? req.cookies[stateKey] : null;
 
   if (state === null || state !== storedState) {
   console.log('state mismatch', 'state: ' + state, 'storedState: ' + storedState, 'cookies: ' + req.cookies);
@@ -157,7 +156,7 @@ auth.get('/callback', async function(req, res) {
       }
     }
     catch (error) {
-      console.log(error);
+      console.error(error);
     }
   }
 });
@@ -166,7 +165,7 @@ auth.post('/token', async function(req, res) {
   // request access token using provided refresh token
 
   res.setHeader('Access-Control-Allow-origin', '*');
-  var refreshToken = req.body ? req.body.refresh_token : null;
+  let refreshToken = req.body ? req.body.refresh_token : null;
 
   if (refreshToken) {
     try {
@@ -180,7 +179,7 @@ auth.post('/token', async function(req, res) {
       let response = await tokenInstance.post('/api/token', qs.stringify(data));
 
       if (response.status === 200) {
-        var accessToken = response.data.access_token, expiresIn = response.data.expires_in;
+        let accessToken = response.data.access_token, expiresIn = response.data.expires_in;
 
         res.header('Content-Type', 'application/json');
         res.send(JSON.stringify({
@@ -196,7 +195,7 @@ auth.post('/token', async function(req, res) {
       }   
     }
     catch (error) {
-      console.log(error);
+      console.error(error);
     }
   } else {
       res.header('Content-Type', 'application/json')

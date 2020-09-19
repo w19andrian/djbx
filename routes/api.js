@@ -5,7 +5,7 @@ const axios = require('axios').default;
 const appConf = require('../config/app');
 const { response } = require('express');
 
-let api = Router();
+const api = Router();
 
 const hostname = appConf.HOST + ':' + appConf.PORT ;
 
@@ -17,7 +17,7 @@ let getNewToken = async refreshToken => {
   try {
     var refreshToken = refreshToken || null;
 
-    var response = await axios.post(hostname + '/auth/token', {
+    let response = await axios.post(hostname + '/auth/token', {
       refresh_token: refreshToken
     })
 
@@ -29,7 +29,7 @@ let getNewToken = async refreshToken => {
     }
   }
   catch (error) {
-    console.log(error);
+    console.error(error);
   }
 }
 
@@ -53,16 +53,16 @@ api.get('/search', async function(req, res) {
       })
 
       if(response.status === 200) {
-        var result = response.data.tracks.items;
+        let result = response.data.tracks.items;
 
-        var resData = {};
-          var key = 'results';
-          resData[key] = resData[key] || []
+        let resData = {};
+        let key = 'results';
+        resData[key] = resData[key] || []
 
-          for ( var i = 0 ; i < result.length ; i++ ) {
+          for ( let i = 0 ; i < result.length ; i++ ) {
 
             // get artists' name
-            var artistName = [];
+            let artistName = [];
             for (let n in result[i].artists) {
               artistName.push({name: result[i].artists[n].name})
             }
@@ -96,7 +96,9 @@ api.get('/search', async function(req, res) {
       }
     }
     catch (error) {
-      console.log(error);
+      res.header('Content-Type: application/json');
+      res.send({code: response.status, message: response.statusText});
+      console.error(error);
     }    
   } else {
       res.header('Content-Type', 'application/json');
@@ -108,7 +110,7 @@ api.get('/search', async function(req, res) {
 /* Add queue based on selected search result */
 
 api.get('/queue', async function(req, res) {
-  var id = req.query ? req.query.id : null ;
+  let id = req.query ? req.query.id : null ;
 
   await getNewToken(refreshToken);
 
@@ -127,11 +129,13 @@ api.get('/queue', async function(req, res) {
         res.send({message: 'Track suscessfully added to queue'});
       } else {
         res.header('Content-Type: application/json');
-        res.send({message: response.statusMessage, code: response.statusCode});
+        res.send({message: response.statusText, code: response.status});
       }
     }
     catch (error) {
-      console.log(error);
+      res.header('Content-Type: application/json');
+      res.send({message: response.statusText, code: response.status});
+      console.error(error);
     }
   } else {
     res.header('Content-Type: application/json');
@@ -156,14 +160,13 @@ api.put('/player/play', async function(req, res) {
         res.send({message: 'Playback resumed'});
       } else {
         res.header('Content-Type: application/json');
-        res.send({
-          code: response.status, 
-          message: response.statusText
-        });
+        res.send({code: response.status, message: response.statusText});
       }
     }
     catch (error){
-      console.log(error);
+      res.header('Content-Type: application/json');
+      res.send({code: response.status, message: response.statusText});
+      console.error(error);
     }
   } else {
     console.log('Device ID not found');
@@ -195,7 +198,9 @@ api.put('/player/pause', async function(req, res) {
       }
     }
     catch (error) {
-      console.log(error);
+      res.header('Content-Type: application/json');
+      res.send({code: response.status, message: response.statusText});
+      console.error(error);
     }
   } else {
     console.log('Device ID not found');
@@ -228,7 +233,9 @@ api.post('/player/next', async function(req, res) {
       }
     }
     catch (error) {
-      console.log(error);
+      res.header('Content-Type: application/json');
+      res.send({code: response.status, message: response.statusText});
+      console.error(error);
     }
   } else {
     console.log('Device ID not found');
