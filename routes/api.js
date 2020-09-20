@@ -13,11 +13,11 @@ const instance = axios.create({
   baseURL: 'https://api.spotify.com/v1'
 })
 
-let getNewToken = async refreshToken => {
+const getNewToken = async refreshToken => {
   try {
     var refreshToken = refreshToken || null;
 
-    let response = await axios.post(hostname + '/auth/token', {
+    const response = await axios.post(hostname + '/auth/token', {
       refresh_token: refreshToken
     })
 
