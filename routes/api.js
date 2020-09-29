@@ -1,108 +1,105 @@
 const express = require('express');
 const Router = express.Router;
-const querystring = require('querystring');
-const request = require('request');
+const axios = require('axios').default;
 
 const appConf = require('../config/app');
 const { response } = require('express');
 
-let api = Router();
+const api = Router();
 
-const hostName = appConf.HOST + ':' + appConf.PORT ;
+const hostname = appConf.HOST + ':' + appConf.PORT ;
 
-const spotifyPrefix = 'https://api.spotify.com/v1' ;
+const instance = axios.create({
+  baseURL: 'https://api.spotify.com/v1'
+})
 
+const getNewToken = async refreshToken => {
+  try {
+    var refreshToken = refreshToken || null;
 
-function getNewToken(refreshToken) {
-  var refreshToken = refreshToken || null;
+    const response = await axios.post(hostname + '/auth/token', {
+      refresh_token: refreshToken
+    })
 
-  var tokenOpts = {
-    url: hostName + '/auth/token?' +
-    querystring.stringify({
-        refresh_token: refreshToken }),
-    json: true
-    }
-
-  request.post(tokenOpts, function(error,response,body) {
-    if(!error && response.statusCode == 200 ){
-    var accessToken = body.accessToken;
+    if (response.data.access_token) {
+      instance.defaults.headers.common['Authorization'] = 'Bearer ' + response.data.access_token ;
     } else {
-      res.send('Error POST to /auth/token')
-    }    
-    return accessToken
-  })
+      console.log('NO TOKEN');
+      delete instance.defaults.headers.common['Authorization'];
+    }
+  }
+  catch (error) {
+    console.error(error);
+  }
 }
 
 /* GET search by given input. */
-api.post('/search', async function(req, res) {
+api.get('/search', async function(req, res) {
 
-  var q = req.body ? req.body.q : null ;
-  var limit = (req.body && req.body.limit) ? req.body.limit : 10 ;
+  let q = req.query ? req.query.q : null ;
+  let limit = (req.query && req.query.limit) ? req.query.limit : 10 ;
 
   await getNewToken(refreshToken);
 
   if(q) {
-    var trackSearch = {
-      url: 'https://api.spotify.com/v1/search?'+ 
-      querystring.stringify({
-        q: q,
-        type: 'track',
-        market: 'ID',
-        limit: limit
-      }),
-      headers: {
-        'Authorization': 'Bearer ' + accessToken
-      },
-      json: true
-    }
+    try {
+      let response = await instance.get('/search', {
+        params: {
+          q: q,
+          type: 'track',
+          market: 'ID',
+          limit: limit
+        }
+      })
 
-    request.get(trackSearch, function(error,response,body) {
-      if (!error && response.statusCode === 200) {
-        var result = body.tracks.items
+      if(response.status === 200) {
+        let result = response.data.tracks.items;
 
-        var resData = {};
-        var key = 'results';
+        let resData = {};
+        let key = 'results';
         resData[key] = resData[key] || []
 
-        for ( var i = 0 ; i < result.length ; i++ ) {
+          for ( let i = 0 ; i < result.length ; i++ ) {
 
-          // get artists' name
-          var artistName = [];
-          for (let n in result[i].artists) {
-            artistName.push({name: result[i].artists[n].name})
+            // get artists' name
+            let artistName = [];
+            for (let n in result[i].artists) {
+              artistName.push({name: result[i].artists[n].name})
+            }
+
+            // get album's cover art size 300 x 300 px
+            images = [];
+            for ( let j in result[i].album.images) {
+              images.push({
+                url: result[i].album.images[j].url,
+                height: result[i].album.images[j].height,
+                width: result[i].album.images[j].width
+              });
+            }
+
+            resData[key].push({
+              id: result[i].id,
+              album: {
+                name: result[i].album.name,
+                type: result[i].album.album_type,
+                release_date: result[i].album.release_date
+              },
+              track: result[i].name, 
+              img: images,  
+              uri: result[i].uri,
+              artist: artistName
+            })
           }
-
-          // get album's cover art size 300 x 300 px
-          images = [];
-          for ( let j in result[i].album.images) {
-            images.push({
-              url: result[i].album.images[j].url,
-              height: result[i].album.images[j].height,
-              width: result[i].album.images[j].width
-            });
-          }
-
-          resData[key].push({
-            id: result[i].id,
-            album: {
-              name: result[i].album.name,
-              type: result[i].album.album_type,
-              release_date: result[i].album.release_date
-            },
-            track: result[i].name, 
-            img: images,  
-            uri: result[i].uri,
-            artist: artistName
-          })
-        }
-        console.log(resData);
-        res.header('Content-Type', 'application/json');
-        res.send(JSON.stringify(resData));
-      } else {
-        res.header('Content-Type', 'application/json');
-        res.send({message: response.statusMessage, status_code: response.statusCode});
+          console.log(resData);
+          res.header('Content-Type', 'application/json');
+          res.send(JSON.stringify(resData));
       }
-    });
+    }
+    catch (error) {
+      res.header('Content-Type: application/json');
+      res.send({code: response.status, message: response.statusText});
+      console.error(error);
+    }    
   } else {
       res.header('Content-Type', 'application/json');
       res.send({message: 'cannot process your request'});
@@ -112,34 +109,34 @@ api.post('/search', async function(req, res) {
 
 /* Add queue based on selected search result */
 
-api.get('/queue', async function(req, res) {
-  var id = req.query ? req.query.id : null ;
+api.post('/queue', async function(req, res) {
+  let id = req.query ? req.query.id : null ;
 
   await getNewToken(refreshToken);
 
-  if(id) {
+  if(id && deviceId) {
+    try {
 
-    var addQueue = {
-      url: spotifyPrefix + '/me/player/queue?'+ 
-      querystring.stringify({
-        uri: 'spotify:track:' + id,
-        device_id: deviceId
-      }),
-      headers:{
-        'Authorization': 'Bearer ' + accessToken
-      },
-      json: true
-    }
+      let response = await instance.post('/me/player/queue', null, {
+        params: {
+          uri: 'spotify:track:' + id,
+          device_id: deviceId
+        }
+      });
 
-    request.post(addQueue, function(error, response, body) {
-      if (!error && response.statusCode == 204) {
+      if (response.status === 204) {
         res.header('Content-Type: application/json');
         res.send({message: 'Track suscessfully added to queue'});
       } else {
         res.header('Content-Type: application/json');
-        res.send({message: response.statusMessage, code: response.statusCode})
+        res.send({message: response.statusText, code: response.status});
       }
-    })
+    }
+    catch (error) {
+      res.header('Content-Type: application/json');
+      res.send({message: response.statusText, code: response.status});
+      console.error(error);
+    }
   } else {
     res.header('Content-Type: application/json');
     res.send({message: '', error: ''})
@@ -151,26 +148,29 @@ api.get('/queue', async function(req, res) {
 api.put('/player/play', async function(req, res) {
   await getNewToken(refreshToken);
 
-  var playQueue = {
-    url: spotifyPrefix + '/me/player/play?' +
-      querystring.stringify({
-        device_id: deviceId
-      }),
-    headers: {
-      'Authorization': 'Bearer ' + accessToken
-    },
-    json: true
-  }
-
-  request.put(playQueue, function(error, response, body) {
-    if (!error && response.statusCode == 204) {
-      res.header('Content-Type: application/json');
-      res.send({message: 'Track suscessfully added to queue'});
-    } else {
-      res.header('Content-Type: application/json');
-      res.send({message: response.statusMessage, code: response.statusCode})
+  if (deviceId) {
+    try {
+      let response = await instance.put('/me/player/play', null, {
+        params: {
+          device_id: deviceId
+        }
+      });
+      if (response.status === 204) {
+        res.header('Content-Type: application/json');
+        res.send({message: 'Playback resumed'});
+      } else {
+        res.header('Content-Type: application/json');
+        res.send({code: response.status, message: response.statusText});
+      }
     }
-  })
+    catch (error){
+      res.header('Content-Type: application/json');
+      res.send({code: response.status, message: response.statusText});
+      console.error(error);
+    }
+  } else {
+    console.log('Device ID not found');
+  }
 })
 
 /* Pause user's current playback on the device specified in the config file */
@@ -178,26 +178,33 @@ api.put('/player/play', async function(req, res) {
 api.put('/player/pause', async function(req, res) {
   await getNewToken(refreshToken);
 
-  var pauseQueue = {
-    url: spotifyPrefix + '/me/player/pause?' +
-      querystring.stringify({
-        device_id: deviceId
-      }),
-    headers: {
-      'Authorization': 'Bearer ' + accessToken
-    },
-    json: true
-  }
+  if (deviceId){
+    try {
+      let response = await instance.put('/me/player/pause', null, {
+        params: {
+          device_id: deviceId
+        }
+      });
 
-  request.put(pauseQueue, function(error, response, body) {
-    if (!error && response.statusCode == 204) {
-      res.header('Content-Type: application/json');
-      res.send({message: 'Track suscessfully added to queue'});
-    } else {
-      res.header('Content-Type: application/json');
-      res.send({message: response.statusMessage, code: response.statusCode})
+      if (response.status === 204) {
+        res.header('Content-Type: application/json');
+        res.send({message: 'Playback paused'});
+      } else {
+        res.header('Content-Type: application/json');
+        res.send({
+          code: response.status, 
+          message: response.statusText
+        });
+      }
     }
-  })
+    catch (error) {
+      res.header('Content-Type: application/json');
+      res.send({code: response.status, message: response.statusText});
+      console.error(error);
+    }
+  } else {
+    console.log('Device ID not found');
+  }
 })
 
 /* Play user's next queue
@@ -206,25 +213,33 @@ on the device specified in the config file */
 api.post('/player/next', async function(req, res) {
   await getNewToken(refreshToken);
 
-  var nextQueue = {
-    url: spotifyPrefix + '/me/player/next?' +
-      querystring.stringify({
-        device_id: deviceId
-      }),
-    headers: {
-      'Authorization': 'Bearer ' + accessToken
-    },
-    json: true
-  }
+  if (deviceId) {
+    try {
+      let response = await instance.post('/me/player/next', null, {
+        params: {
+          device_id: deviceId
+        }
+      });
 
-  request.post(nextQueue, function(error, response, body) {
-    if (!error && response.statusCode == 204) {
-      res.header('Content-Type: application/json');
-      res.send({message: 'Track suscessfully added to queue'});
-    } else {
-      res.header('Content-Type: application/json');
-      res.send({message: response.statusMessage, code: response.statusCode})
+      if (response.status === 204) {
+        res.header('Content-Type: application/json');
+        res.send({message: 'Playback skipped to the next track'});
+      } else {
+        res.header('Content-Type: application/json');
+        res.send({
+          code: response.status, 
+          message: response.statusText
+        });
+      }
     }
-  })
-})
+    catch (error) {
+      res.header('Content-Type: application/json');
+      res.send({code: response.status, message: response.statusText});
+      console.error(error);
+    }
+  } else {
+    console.log('Device ID not found');
+  }
+});
+
 module.exports = api
